@@ -1,14 +1,41 @@
-import { Bookmark } from "@/types/brain";
-import { ExternalLink, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { Bookmark, AISummary } from "@/types/brain";
+import { ExternalLink, Trash2, Sparkles, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import { updateBookmark } from "@/lib/store";
+import { toast } from "sonner";
 
 interface Props {
   bookmark: Bookmark;
   onDelete: (id: string) => void;
   onTagClick: (tag: string) => void;
+  onUpdate?: (id: string, updates: Partial<Bookmark>) => void;
 }
 
-export function BookmarkCard({ bookmark, onDelete, onTagClick }: Props) {
+export function BookmarkCard({ bookmark, onDelete, onTagClick, onUpdate }: Props) {
+  const [loading, setLoading] = useState(false);
+
+  const generateSummary = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("summarize", {
+        body: { url: bookmark.url, title: bookmark.title },
+      });
+      if (error) throw error;
+      const summary: AISummary = data;
+      const updated = updateBookmark(bookmark.id, { aiSummary: summary });
+      onUpdate?.(bookmark.id, { aiSummary: summary });
+      toast.success("Summary generated!");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to generate summary");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <motion.div
       layout
@@ -52,6 +79,47 @@ export function BookmarkCard({ bookmark, onDelete, onTagClick }: Props) {
             {bookmark.notes}
           </p>
         </div>
+      )}
+
+      {/* AI Summary */}
+      {bookmark.aiSummary ? (
+        <div className="bg-accent/5 rounded-lg p-3 border border-accent/20">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="h-3 w-3 text-accent" />
+            <span className="text-[10px] font-mono text-accent uppercase tracking-wider">AI Summary</span>
+            <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-mono border ${
+              bookmark.aiSummary.difficulty === "Beginner"
+                ? "bg-green-500/10 text-green-400 border-green-500/20"
+                : bookmark.aiSummary.difficulty === "Intermediate"
+                ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+                : "bg-red-500/10 text-red-400 border-red-500/20"
+            }`}>
+              {bookmark.aiSummary.difficulty}
+            </span>
+          </div>
+          <p className="text-xs text-foreground mb-2">{bookmark.aiSummary.summary}</p>
+          <ul className="space-y-0.5">
+            {bookmark.aiSummary.keyTakeaways.map((t, i) => (
+              <li key={i} className="text-[10px] text-secondary-foreground flex items-start gap-1.5">
+                <span className="text-accent mt-0.5">▸</span>
+                {t}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <button
+          onClick={generateSummary}
+          disabled={loading}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-mono bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-colors disabled:opacity-50"
+        >
+          {loading ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <Sparkles className="h-3 w-3" />
+          )}
+          {loading ? "Generating..." : "Generate AI Summary"}
+        </button>
       )}
 
       {bookmark.tags.length > 0 && (
