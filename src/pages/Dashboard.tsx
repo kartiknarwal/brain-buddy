@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Search, Brain } from "lucide-react";
+import { Plus, Search, Brain, Zap, Code2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Bookmark, Collection } from "@/types/brain";
-import { getBookmarks, getCollections, addBookmark, deleteBookmark, addCollection, deleteCollection, generateId } from "@/lib/store";
+import { getBookmarks, getCollections, addBookmark, deleteBookmark, updateBookmark as updateBookmarkStore, addCollection, deleteCollection, generateId } from "@/lib/store";
 import { BookmarkCard } from "@/components/BookmarkCard";
 import { AddBookmarkDialog } from "@/components/AddBookmarkDialog";
 import { AddCollectionDialog } from "@/components/AddCollectionDialog";
@@ -60,6 +60,10 @@ export default function Dashboard() {
     setBookmarks(deleteBookmark(id));
   };
 
+  const handleUpdateBookmark = (id: string, updates: Partial<Bookmark>) => {
+    setBookmarks(updateBookmarkStore(id, updates));
+  };
+
   const handleAddCollection = (name: string, emoji: string) => {
     const collection: Collection = { id: generateId(), name, emoji, createdAt: new Date().toISOString() };
     setCollections(addCollection(collection));
@@ -73,7 +77,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Sidebar */}
       <CollectionsSidebar
         collections={collections}
         activeCollection={activeCollection}
@@ -85,9 +88,7 @@ export default function Dashboard() {
         onSelectTag={setActiveTag}
       />
 
-      {/* Main */}
       <div className="flex-1 flex flex-col min-h-screen">
-        {/* Header */}
         <header className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("/")}>
             <Brain className="h-6 w-6 text-primary" />
@@ -106,41 +107,50 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <Button
-            onClick={() => setShowAddBookmark(true)}
-            className="bg-primary text-primary-foreground font-mono font-semibold gap-2 hover:shadow-[var(--neon-glow)] transition-shadow"
-          >
-            <Plus className="h-4 w-4" />
-            Add Bookmark
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/snippets")}
+              className="border-border text-muted-foreground hover:text-foreground font-mono gap-1.5"
+            >
+              <Code2 className="h-4 w-4" />
+              Snippets
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/recall")}
+              className="border-border text-muted-foreground hover:text-foreground font-mono gap-1.5"
+            >
+              <Zap className="h-4 w-4" />
+              Recall
+            </Button>
+            <Button
+              onClick={() => setShowAddBookmark(true)}
+              className="bg-primary text-primary-foreground font-mono font-semibold gap-2 hover:shadow-[var(--neon-glow)] transition-shadow"
+              size="sm"
+            >
+              <Plus className="h-4 w-4" />
+              Add Bookmark
+            </Button>
+          </div>
         </header>
 
-        {/* Content */}
         <main className="flex-1 p-6 overflow-auto">
-          {/* Active filters */}
           {(activeCollection || activeTag) && (
             <div className="flex items-center gap-2 mb-4 font-mono text-sm">
               {activeCollection && (
                 <span className="px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
                   {collections.find((c) => c.id === activeCollection)?.emoji}{" "}
                   {collections.find((c) => c.id === activeCollection)?.name}
-                  <button
-                    onClick={() => setActiveCollection(null)}
-                    className="ml-2 text-muted-foreground hover:text-foreground"
-                  >
-                    ×
-                  </button>
+                  <button onClick={() => setActiveCollection(null)} className="ml-2 text-muted-foreground hover:text-foreground">×</button>
                 </span>
               )}
               {activeTag && (
                 <span className="px-3 py-1 rounded-full bg-accent/10 text-accent border border-accent/20">
                   #{activeTag}
-                  <button
-                    onClick={() => setActiveTag(null)}
-                    className="ml-2 text-muted-foreground hover:text-foreground"
-                  >
-                    ×
-                  </button>
+                  <button onClick={() => setActiveTag(null)} className="ml-2 text-muted-foreground hover:text-foreground">×</button>
                 </span>
               )}
             </div>
@@ -160,10 +170,7 @@ export default function Dashboard() {
                   : "Try adjusting your search or filters."}
               </p>
               {bookmarks.length === 0 && (
-                <Button
-                  onClick={() => setShowAddBookmark(true)}
-                  className="mt-4 bg-primary text-primary-foreground font-mono gap-2"
-                >
+                <Button onClick={() => setShowAddBookmark(true)} className="mt-4 bg-primary text-primary-foreground font-mono gap-2">
                   <Plus className="h-4 w-4" />
                   Add First Bookmark
                 </Button>
@@ -177,6 +184,7 @@ export default function Dashboard() {
                   bookmark={b}
                   onDelete={handleDeleteBookmark}
                   onTagClick={setActiveTag}
+                  onUpdate={handleUpdateBookmark}
                 />
               ))}
             </div>
@@ -184,18 +192,8 @@ export default function Dashboard() {
         </main>
       </div>
 
-      <AddBookmarkDialog
-        open={showAddBookmark}
-        onOpenChange={setShowAddBookmark}
-        onAdd={handleAddBookmark}
-        collections={collections}
-      />
-
-      <AddCollectionDialog
-        open={showAddCollection}
-        onOpenChange={setShowAddCollection}
-        onAdd={handleAddCollection}
-      />
+      <AddBookmarkDialog open={showAddBookmark} onOpenChange={setShowAddBookmark} onAdd={handleAddBookmark} collections={collections} />
+      <AddCollectionDialog open={showAddCollection} onOpenChange={setShowAddCollection} onAdd={handleAddCollection} />
     </div>
   );
 }

@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
+import RecallMode from "./pages/RecallMode";
+import SnippetsPage from "./pages/SnippetsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -18,6 +20,8 @@ const App = () => (
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/recall" element={<RecallMode />} />
+          <Route path="/snippets" element={<SnippetsPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

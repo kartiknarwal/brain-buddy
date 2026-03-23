@@ -1,7 +1,8 @@
-import { Bookmark, Collection } from "@/types/brain";
+import { Bookmark, Collection, CodeSnippet } from "@/types/brain";
 
 const BOOKMARKS_KEY = "brainvault_bookmarks";
 const COLLECTIONS_KEY = "brainvault_collections";
+const SNIPPETS_KEY = "brainvault_snippets";
 
 export function getBookmarks(): Bookmark[] {
   const raw = localStorage.getItem(BOOKMARKS_KEY);
@@ -50,6 +51,29 @@ export function addCollection(collection: Collection) {
 export function deleteCollection(id: string) {
   const all = getCollections().filter((c) => c.id !== id);
   saveCollections(all);
+  return all;
+}
+
+// Code Snippets
+export function getSnippets(): CodeSnippet[] {
+  const raw = localStorage.getItem(SNIPPETS_KEY);
+  return raw ? JSON.parse(raw) : [];
+}
+
+export function saveSnippets(snippets: CodeSnippet[]) {
+  localStorage.setItem(SNIPPETS_KEY, JSON.stringify(snippets));
+}
+
+export function addSnippet(snippet: CodeSnippet) {
+  const all = getSnippets();
+  all.unshift(snippet);
+  saveSnippets(all);
+  return all;
+}
+
+export function deleteSnippet(id: string) {
+  const all = getSnippets().filter((s) => s.id !== id);
+  saveSnippets(all);
   return all;
 }
 
