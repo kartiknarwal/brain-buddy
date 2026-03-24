@@ -4,6 +4,7 @@ import { ExternalLink, Trash2, Sparkles, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { updateBookmark } from "@/lib/store";
+import { trackSummaryGenerated } from "@/lib/gamification";
 import { toast } from "sonner";
 
 interface Props {
@@ -27,6 +28,7 @@ export function BookmarkCard({ bookmark, onDelete, onTagClick, onUpdate }: Props
       const summary: AISummary = data;
       const updated = updateBookmark(bookmark.id, { aiSummary: summary });
       onUpdate?.(bookmark.id, { aiSummary: summary });
+      trackSummaryGenerated();
       toast.success("Summary generated!");
     } catch (err: any) {
       console.error(err);
