@@ -14,7 +14,185 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookmarks: {
+        Row: {
+          ai_summary: Json | null
+          collection_id: string | null
+          created_at: string | null
+          description: string | null
+          favicon: string | null
+          id: string
+          notes: string | null
+          tags: string[] | null
+          title: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          ai_summary?: Json | null
+          collection_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          favicon?: string | null
+          id?: string
+          notes?: string | null
+          tags?: string[] | null
+          title: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          ai_summary?: Json | null
+          collection_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          favicon?: string | null
+          id?: string
+          notes?: string | null
+          tags?: string[] | null
+          title?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookmarks_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collections: {
+        Row: {
+          created_at: string | null
+          emoji: string | null
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          emoji?: string | null
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          emoji?: string | null
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string
+          is_public: boolean | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id: string
+          is_public?: boolean | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          is_public?: boolean | null
+          username?: string | null
+        }
+        Relationships: []
+      }
+      snippets: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          language: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          language?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          language?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_stats: {
+        Row: {
+          badges: Json | null
+          categories_covered: string[] | null
+          daily_activity: Json | null
+          id: string
+          last_active_date: string | null
+          level: number | null
+          streak: number | null
+          total_bookmarks: number | null
+          total_recalls: number | null
+          total_snippets: number | null
+          updated_at: string | null
+          xp: number | null
+        }
+        Insert: {
+          badges?: Json | null
+          categories_covered?: string[] | null
+          daily_activity?: Json | null
+          id: string
+          last_active_date?: string | null
+          level?: number | null
+          streak?: number | null
+          total_bookmarks?: number | null
+          total_recalls?: number | null
+          total_snippets?: number | null
+          updated_at?: string | null
+          xp?: number | null
+        }
+        Update: {
+          badges?: Json | null
+          categories_covered?: string[] | null
+          daily_activity?: Json | null
+          id?: string
+          last_active_date?: string | null
+          level?: number | null
+          streak?: number | null
+          total_bookmarks?: number | null
+          total_recalls?: number | null
+          total_snippets?: number | null
+          updated_at?: string | null
+          xp?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

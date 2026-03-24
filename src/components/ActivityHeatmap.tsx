@@ -1,8 +1,27 @@
-import { getActivityHeatmap } from "@/lib/gamification";
+import { useState, useEffect } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAuth } from "@/contexts/AuthContext";
+import { fetchStats } from "@/lib/api";
 
 export function ActivityHeatmap() {
-  const data = getActivityHeatmap();
+  const { user } = useAuth();
+  const [dailyActivity, setDailyActivity] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!user) return;
+    fetchStats(user.id).then((s) => {
+      if (s) setDailyActivity(s.dailyActivity || {});
+    }).catch(console.error);
+  }, [user]);
+
+  const data: { date: string; count: number }[] = [];
+  const now = new Date();
+  for (let i = 90; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().split("T")[0];
+    data.push({ date: key, count: dailyActivity[key] || 0 });
+  }
 
   const getColor = (count: number) => {
     if (count === 0) return "bg-secondary";
@@ -11,7 +30,6 @@ export function ActivityHeatmap() {
     return "bg-primary";
   };
 
-  // Group by weeks for grid layout
   const weeks: { date: string; count: number }[][] = [];
   let currentWeek: { date: string; count: number }[] = [];
   data.forEach((d, i) => {
@@ -33,9 +51,7 @@ export function ActivityHeatmap() {
             {week.map((day) => (
               <Tooltip key={day.date}>
                 <TooltipTrigger asChild>
-                  <div
-                    className={`w-3 h-3 rounded-[2px] ${getColor(day.count)} transition-colors hover:ring-1 hover:ring-primary/50`}
-                  />
+                  <div className={`w-3 h-3 rounded-[2px] ${getColor(day.count)} transition-colors hover:ring-1 hover:ring-primary/50`} />
                 </TooltipTrigger>
                 <TooltipContent className="font-mono text-xs">
                   {day.date}: {day.count} action{day.count !== 1 ? "s" : ""}

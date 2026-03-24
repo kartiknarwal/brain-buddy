@@ -62,7 +62,7 @@ export default function LandingPage() {
           <span className="font-mono font-bold text-lg text-foreground">BrainVault</span>
         </div>
         <Button
-          onClick={() => navigate("/dashboard")}
+          onClick={() => navigate("/auth")}
           className="bg-primary text-primary-foreground font-mono font-semibold hover:shadow-[var(--neon-glow)] transition-shadow"
         >
           Open App
@@ -94,7 +94,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               size="lg"
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/auth")}
               className="bg-primary text-primary-foreground font-mono font-bold text-base px-8 py-6 hover:shadow-[var(--neon-glow)] transition-all"
             >
               Get Started — It's Free
@@ -160,7 +160,7 @@ export default function LandingPage() {
           </p>
           <Button
             size="lg"
-            onClick={() => navigate("/dashboard")}
+            onClick={() => navigate("/auth")}
             className="bg-primary text-primary-foreground font-mono font-bold px-8 py-6 hover:shadow-[var(--neon-glow)] transition-all"
           >
             Launch BrainVault
