@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Search, Brain, Zap, Code2 } from "lucide-react";
+import { Plus, Search, Brain, Zap, Code2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Bookmark, Collection } from "@/types/brain";
@@ -8,7 +8,9 @@ import { BookmarkCard } from "@/components/BookmarkCard";
 import { AddBookmarkDialog } from "@/components/AddBookmarkDialog";
 import { AddCollectionDialog } from "@/components/AddCollectionDialog";
 import { CollectionsSidebar } from "@/components/CollectionsSidebar";
+import { StatsBar } from "@/components/StatsBar";
 import { useNavigate } from "react-router-dom";
+import { getStats, trackBookmarkAdded, UserStats } from "@/lib/gamification";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -19,6 +21,7 @@ export default function Dashboard() {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [showAddBookmark, setShowAddBookmark] = useState(false);
   const [showAddCollection, setShowAddCollection] = useState(false);
+  const [stats, setStats] = useState<UserStats>(getStats());
 
   useEffect(() => {
     setBookmarks(getBookmarks());
@@ -53,6 +56,7 @@ export default function Dashboard() {
       aiSummary: null,
     };
     setBookmarks(addBookmark(bookmark));
+    setStats(trackBookmarkAdded(data.tags));
     setShowAddBookmark(false);
   };
 
@@ -111,6 +115,15 @@ export default function Dashboard() {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => navigate("/profile")}
+              className="border-border text-muted-foreground hover:text-foreground font-mono gap-1.5"
+            >
+              <User className="h-4 w-4" />
+              Profile
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => navigate("/snippets")}
               className="border-border text-muted-foreground hover:text-foreground font-mono gap-1.5"
             >
@@ -138,6 +151,9 @@ export default function Dashboard() {
         </header>
 
         <main className="flex-1 p-6 overflow-auto">
+          <div className="mb-6">
+            <StatsBar stats={stats} />
+          </div>
           {(activeCollection || activeTag) && (
             <div className="flex items-center gap-2 mb-4 font-mono text-sm">
               {activeCollection && (
