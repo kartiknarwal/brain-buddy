@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CodeSnippet } from "@/types/brain";
 import { getSnippets, addSnippet, deleteSnippet, generateId } from "@/lib/store";
+import { trackSnippetAdded } from "@/lib/gamification";
 import { AddSnippetDialog } from "@/components/AddSnippetDialog";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -49,6 +50,7 @@ export default function SnippetsPage() {
       createdAt: new Date().toISOString(),
     };
     setSnippets(addSnippet(snippet));
+    trackSnippetAdded();
     setShowAdd(false);
   };
 
