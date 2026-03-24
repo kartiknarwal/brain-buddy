@@ -3,8 +3,7 @@ import { Bookmark, AISummary } from "@/types/brain";
 import { ExternalLink, Trash2, Sparkles, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { updateBookmark } from "@/lib/store";
-import { trackSummaryGenerated } from "@/lib/gamification";
+import { updateBookmarkDb } from "@/lib/api";
 import { toast } from "sonner";
 
 interface Props {
