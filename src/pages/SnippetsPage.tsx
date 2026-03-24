@@ -3,11 +3,12 @@ import { Plus, Code2, Trash2, ArrowLeft, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CodeSnippet } from "@/types/brain";
-import { getSnippets, addSnippet, deleteSnippet, generateId } from "@/lib/store";
-import { trackSnippetAdded } from "@/lib/gamification";
+import { fetchSnippets, insertSnippet, deleteSnippetDb, fetchStats, updateStats } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 import { AddSnippetDialog } from "@/components/AddSnippetDialog";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 const LANG_COLORS: Record<string, string> = {
   javascript: "bg-yellow-500/20 text-yellow-400",
@@ -27,13 +28,15 @@ const LANG_COLORS: Record<string, string> = {
 
 export default function SnippetsPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [snippets, setSnippets] = useState<CodeSnippet[]>([]);
   const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
 
   useEffect(() => {
-    setSnippets(getSnippets());
-  }, []);
+    if (!user) return;
+    fetchSnippets().then(setSnippets).catch(console.error);
+  }, [user]);
 
   const filtered = snippets.filter(
     (s) =>
@@ -43,19 +46,36 @@ export default function SnippetsPage() {
       s.description.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleAdd = (data: Omit<CodeSnippet, "id" | "createdAt">) => {
-    const snippet: CodeSnippet = {
-      ...data,
-      id: generateId(),
-      createdAt: new Date().toISOString(),
-    };
-    setSnippets(addSnippet(snippet));
-    trackSnippetAdded();
-    setShowAdd(false);
+  const handleAdd = async (data: Omit<CodeSnippet, "id" | "createdAt">) => {
+    if (!user) return;
+    try {
+      const snippet = await insertSnippet(user.id, data);
+      setSnippets((prev) => [snippet, ...prev]);
+      // Track stats
+      try {
+        const stats = await fetchStats(user.id);
+        if (stats) {
+          const today = new Date().toISOString().split("T")[0];
+          stats.xp += 10;
+          stats.totalSnippets += 1;
+          stats.level = Math.floor(stats.xp / 100) + 1;
+          stats.dailyActivity = { ...stats.dailyActivity, [today]: (stats.dailyActivity[today] || 0) + 1 };
+          await updateStats(user.id, stats);
+        }
+      } catch {}
+      setShowAdd(false);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setSnippets(deleteSnippet(id));
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteSnippetDb(id);
+      setSnippets((prev) => prev.filter((s) => s.id !== id));
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
   const langColor = (lang: string) =>
@@ -64,81 +84,44 @@ export default function SnippetsPage() {
   return (
     <div className="min-h-screen bg-background grid-bg flex flex-col">
       <header className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/dashboard")}
-            className="text-muted-foreground hover:text-foreground gap-1 font-mono"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-        </div>
+        <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="text-muted-foreground hover:text-foreground gap-1 font-mono">
+          <ArrowLeft className="h-4 w-4" /> Back
+        </Button>
         <div className="flex items-center gap-2">
           <Code2 className="h-5 w-5 text-primary" />
           <span className="font-mono font-bold text-foreground">Code Vault</span>
         </div>
-        <Button
-          onClick={() => setShowAdd(true)}
-          className="bg-primary text-primary-foreground font-mono font-semibold gap-2 hover:shadow-[var(--neon-glow)] transition-shadow"
-          size="sm"
-        >
-          <Plus className="h-4 w-4" />
-          Add Snippet
+        <Button onClick={() => setShowAdd(true)} className="bg-primary text-primary-foreground font-mono font-semibold gap-2 hover:shadow-[var(--neon-glow)] transition-shadow" size="sm">
+          <Plus className="h-4 w-4" /> Add Snippet
         </Button>
       </header>
 
       <div className="max-w-4xl mx-auto w-full px-6 py-6 flex-1">
         <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search snippets..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 bg-secondary border-border font-mono text-sm"
-          />
+          <Input placeholder="Search snippets..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-secondary border-border font-mono text-sm" />
         </div>
 
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[50vh] text-center">
             <Code2 className="h-12 w-12 text-primary mb-4 animate-pulse-neon" />
-            <h3 className="font-mono font-semibold text-lg mb-2">
-              {snippets.length === 0 ? "No snippets yet" : "No matches"}
-            </h3>
-            <p className="text-muted-foreground text-sm max-w-sm">
-              {snippets.length === 0
-                ? "Save your go-to code patterns, algorithms, and solutions."
-                : "Try a different search."}
-            </p>
+            <h3 className="font-mono font-semibold text-lg mb-2">{snippets.length === 0 ? "No snippets yet" : "No matches"}</h3>
+            <p className="text-muted-foreground text-sm max-w-sm">{snippets.length === 0 ? "Save your go-to code patterns, algorithms, and solutions." : "Try a different search."}</p>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
             {filtered.map((s) => (
-              <motion.div
-                key={s.id}
-                layout
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="glass-hover rounded-xl overflow-hidden group"
-              >
+              <motion.div key={s.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-hover rounded-xl overflow-hidden group">
                 <div className="flex items-center justify-between px-5 py-3 border-b border-border/50">
                   <div className="flex items-center gap-3">
                     <h3 className="font-mono font-semibold text-sm text-foreground">{s.title}</h3>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${langColor(s.language)}`}>
-                      {s.language}
-                    </span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${langColor(s.language)}`}>{s.language}</span>
                   </div>
-                  <button
-                    onClick={() => handleDelete(s.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
-                  >
+                  <button onClick={() => handleDelete(s.id)} className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all">
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
-                <pre className="px-5 py-4 overflow-x-auto text-xs font-mono text-foreground leading-relaxed">
-                  <code>{s.code}</code>
-                </pre>
+                <pre className="px-5 py-4 overflow-x-auto text-xs font-mono text-foreground leading-relaxed"><code>{s.code}</code></pre>
                 {s.description && (
                   <div className="px-5 py-3 border-t border-border/50">
                     <p className="text-xs text-muted-foreground">{s.description}</p>

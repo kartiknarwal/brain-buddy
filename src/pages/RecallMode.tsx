@@ -3,29 +3,50 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Brain, ChevronLeft, ChevronRight, RotateCcw, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Bookmark } from "@/types/brain";
-import { getBookmarks } from "@/lib/store";
-import { trackRecallCompleted } from "@/lib/gamification";
+import { fetchBookmarks } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { fetchStats, updateStats } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
 
 export default function RecallMode() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [current, setCurrent] = useState(0);
   const [flipped, setFlipped] = useState(false);
 
   useEffect(() => {
-    const all = getBookmarks().filter((b) => b.notes || b.aiSummary);
-    setBookmarks(all);
-  }, []);
+    if (!user) return;
+    fetchBookmarks().then((all) => {
+      setBookmarks(all.filter((b) => b.notes || b.aiSummary));
+    }).catch(console.error);
+  }, [user]);
+
+  const trackRecall = useCallback(async () => {
+    if (!user) return;
+    try {
+      const stats = await fetchStats(user.id);
+      if (!stats) return;
+      const today = new Date().toISOString().split("T")[0];
+      stats.xp += 20;
+      stats.totalRecalls += 1;
+      stats.level = Math.floor(stats.xp / 100) + 1;
+      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+      stats.streak = stats.lastActiveDate === yesterday.toISOString().split("T")[0] ? stats.streak + 1 : (stats.lastActiveDate === today ? stats.streak : 1);
+      stats.lastActiveDate = today;
+      stats.dailyActivity = { ...stats.dailyActivity, [today]: (stats.dailyActivity[today] || 0) + 1 };
+      await updateStats(user.id, stats);
+    } catch (err) { console.error(err); }
+  }, [user]);
 
   const next = useCallback(() => {
     setFlipped(false);
     setCurrent((prev) => {
       const nextIdx = (prev + 1) % bookmarks.length;
-      if (nextIdx === 0 && prev !== 0) trackRecallCompleted();
+      if (nextIdx === 0 && prev !== 0) trackRecall();
       return nextIdx;
     });
-  }, [bookmarks.length]);
+  }, [bookmarks.length, trackRecall]);
 
   const prev = useCallback(() => {
     setFlipped(false);
@@ -48,19 +69,10 @@ export default function RecallMode() {
 
   return (
     <div className="min-h-screen bg-background grid-bg flex flex-col">
-      {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/dashboard")}
-            className="text-muted-foreground hover:text-foreground gap-1 font-mono"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-        </div>
+        <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="text-muted-foreground hover:text-foreground gap-1 font-mono">
+          <ArrowLeft className="h-4 w-4" /> Back
+        </Button>
         <div className="flex items-center gap-2">
           <Brain className="h-5 w-5 text-primary" />
           <span className="font-mono font-bold text-foreground">Recall Mode</span>
@@ -70,7 +82,6 @@ export default function RecallMode() {
         </span>
       </header>
 
-      {/* Card area */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-10">
         {bookmarks.length === 0 ? (
           <div className="text-center">
@@ -79,17 +90,11 @@ export default function RecallMode() {
             <p className="text-muted-foreground text-sm max-w-sm mx-auto mb-4">
               Add bookmarks with notes or generate AI summaries to use recall mode.
             </p>
-            <Button onClick={() => navigate("/dashboard")} className="bg-primary text-primary-foreground font-mono">
-              Go to Dashboard
-            </Button>
+            <Button onClick={() => navigate("/dashboard")} className="bg-primary text-primary-foreground font-mono">Go to Dashboard</Button>
           </div>
         ) : bookmark ? (
           <>
-            <div
-              className="w-full max-w-xl perspective-1000 cursor-pointer"
-              onClick={flip}
-              style={{ perspective: "1000px" }}
-            >
+            <div className="w-full max-w-xl cursor-pointer" onClick={flip} style={{ perspective: "1000px" }}>
               <AnimatePresence mode="wait">
                 <motion.div
                   key={`${current}-${flipped}`}
@@ -100,34 +105,20 @@ export default function RecallMode() {
                   className="glass neon-border rounded-2xl p-8 min-h-[320px] flex flex-col justify-center"
                 >
                   {!flipped ? (
-                    /* Front: Title + URL */
                     <div className="text-center">
-                      <img
-                        src={bookmark.favicon}
-                        alt=""
-                        className="w-8 h-8 rounded mx-auto mb-4"
-                      />
-                      <h2 className="font-mono font-bold text-xl text-foreground mb-3">
-                        {bookmark.title}
-                      </h2>
-                      {bookmark.description && (
-                        <p className="text-sm text-muted-foreground mb-4">{bookmark.description}</p>
-                      )}
+                      <img src={bookmark.favicon} alt="" className="w-8 h-8 rounded mx-auto mb-4" />
+                      <h2 className="font-mono font-bold text-xl text-foreground mb-3">{bookmark.title}</h2>
+                      {bookmark.description && <p className="text-sm text-muted-foreground mb-4">{bookmark.description}</p>}
                       {bookmark.tags.length > 0 && (
                         <div className="flex flex-wrap justify-center gap-1.5 mb-4">
                           {bookmark.tags.map((t) => (
-                            <span key={t} className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-primary/10 text-primary border border-primary/20">
-                              #{t}
-                            </span>
+                            <span key={t} className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-primary/10 text-primary border border-primary/20">#{t}</span>
                           ))}
                         </div>
                       )}
-                      <p className="text-xs text-muted-foreground font-mono animate-pulse-neon">
-                        Click or press Space to reveal →
-                      </p>
+                      <p className="text-xs text-muted-foreground font-mono animate-pulse-neon">Click or press Space to reveal →</p>
                     </div>
                   ) : (
-                    /* Back: Notes + AI Summary */
                     <div className="space-y-4">
                       {bookmark.notes && (
                         <div>
@@ -140,28 +131,20 @@ export default function RecallMode() {
                           <div className="flex items-center gap-2 mb-2">
                             <h4 className="font-mono text-xs text-accent uppercase tracking-wider">AI Summary</h4>
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono border ${
-                              bookmark.aiSummary.difficulty === "Beginner"
-                                ? "bg-green-500/10 text-green-400 border-green-500/20"
-                                : bookmark.aiSummary.difficulty === "Intermediate"
-                                ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
-                                : "bg-red-500/10 text-red-400 border-red-500/20"
-                            }`}>
-                              {bookmark.aiSummary.difficulty}
-                            </span>
+                              bookmark.aiSummary.difficulty === "Beginner" ? "bg-green-500/10 text-green-400 border-green-500/20"
+                              : bookmark.aiSummary.difficulty === "Intermediate" ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+                              : "bg-red-500/10 text-red-400 border-red-500/20"
+                            }`}>{bookmark.aiSummary.difficulty}</span>
                           </div>
                           <p className="text-sm text-foreground mb-3">{bookmark.aiSummary.summary}</p>
                           <ul className="space-y-1">
                             {bookmark.aiSummary.keyTakeaways.map((t, i) => (
                               <li key={i} className="text-xs text-secondary-foreground flex items-start gap-2">
-                                <span className="text-primary mt-0.5">▸</span>
-                                {t}
+                                <span className="text-primary mt-0.5">▸</span>{t}
                               </li>
                             ))}
                           </ul>
                         </div>
-                      )}
-                      {!bookmark.notes && !bookmark.aiSummary && (
-                        <p className="text-muted-foreground text-sm text-center">No notes or summary available.</p>
                       )}
                     </div>
                   )}
@@ -169,37 +152,18 @@ export default function RecallMode() {
               </AnimatePresence>
             </div>
 
-            {/* Controls */}
             <div className="flex items-center gap-4 mt-8">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={prev}
-                className="border-border text-muted-foreground hover:text-foreground"
-              >
+              <Button variant="outline" size="icon" onClick={prev} className="border-border text-muted-foreground hover:text-foreground">
                 <ChevronLeft className="h-5 w-5" />
               </Button>
-              <Button
-                variant="outline"
-                onClick={flip}
-                className="border-border text-muted-foreground hover:text-foreground font-mono gap-2"
-              >
-                <RotateCcw className="h-4 w-4" />
-                Flip
+              <Button variant="outline" onClick={flip} className="border-border text-muted-foreground hover:text-foreground font-mono gap-2">
+                <RotateCcw className="h-4 w-4" /> Flip
               </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={next}
-                className="border-border text-muted-foreground hover:text-foreground"
-              >
+              <Button variant="outline" size="icon" onClick={next} className="border-border text-muted-foreground hover:text-foreground">
                 <ChevronRight className="h-5 w-5" />
               </Button>
             </div>
-
-            <p className="mt-4 text-[10px] text-muted-foreground font-mono">
-              ← → to navigate · Space to flip · h/l vim keys
-            </p>
+            <p className="mt-4 text-[10px] text-muted-foreground font-mono">← → to navigate · Space to flip · h/l vim keys</p>
           </>
         ) : null}
       </div>

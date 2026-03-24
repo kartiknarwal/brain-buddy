@@ -1,19 +1,24 @@
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Search, Brain, Zap, Code2, User } from "lucide-react";
+import { Plus, Search, Brain, Zap, Code2, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Bookmark, Collection } from "@/types/brain";
-import { getBookmarks, getCollections, addBookmark, deleteBookmark, updateBookmark as updateBookmarkStore, addCollection, deleteCollection, generateId } from "@/lib/store";
 import { BookmarkCard } from "@/components/BookmarkCard";
 import { AddBookmarkDialog } from "@/components/AddBookmarkDialog";
 import { AddCollectionDialog } from "@/components/AddCollectionDialog";
 import { CollectionsSidebar } from "@/components/CollectionsSidebar";
 import { StatsBar } from "@/components/StatsBar";
 import { useNavigate } from "react-router-dom";
-import { getStats, trackBookmarkAdded, UserStats } from "@/lib/gamification";
+import { useAuth } from "@/contexts/AuthContext";
+import { fetchBookmarks, fetchCollections, insertBookmark, deleteBookmarkDb, updateBookmarkDb, insertCollection, deleteCollectionDb, fetchStats, updateStats } from "@/lib/api";
+import { UserStats, xpProgress } from "@/lib/gamification";
+import { toast } from "sonner";
+
+const defaultStats: UserStats = { xp: 0, level: 1, streak: 0, lastActiveDate: "", totalBookmarks: 0, totalSnippets: 0, totalRecalls: 0, categoriesCovered: [], badges: [], dailyActivity: {} };
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [search, setSearch] = useState("");
@@ -21,12 +26,14 @@ export default function Dashboard() {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [showAddBookmark, setShowAddBookmark] = useState(false);
   const [showAddCollection, setShowAddCollection] = useState(false);
-  const [stats, setStats] = useState<UserStats>(getStats());
+  const [stats, setStats] = useState<UserStats>(defaultStats);
 
   useEffect(() => {
-    setBookmarks(getBookmarks());
-    setCollections(getCollections());
-  }, []);
+    if (!user) return;
+    fetchBookmarks().then(setBookmarks).catch(console.error);
+    fetchCollections().then(setCollections).catch(console.error);
+    fetchStats(user.id).then((s) => s && setStats(s as UserStats)).catch(console.error);
+  }, [user]);
 
   const allTags = useMemo(() => {
     const tagSet = new Set<string>();
@@ -47,36 +54,74 @@ export default function Dashboard() {
     });
   }, [bookmarks, search, activeCollection, activeTag]);
 
-  const handleAddBookmark = (data: Omit<Bookmark, "id" | "createdAt" | "favicon" | "aiSummary">) => {
-    const bookmark: Bookmark = {
-      ...data,
-      id: generateId(),
-      createdAt: new Date().toISOString(),
-      favicon: `https://www.google.com/s2/favicons?domain=${new URL(data.url).hostname}&sz=32`,
-      aiSummary: null,
-    };
-    setBookmarks(addBookmark(bookmark));
-    setStats(trackBookmarkAdded(data.tags));
-    setShowAddBookmark(false);
+  const handleAddBookmark = async (data: Omit<Bookmark, "id" | "createdAt" | "favicon" | "aiSummary">) => {
+    if (!user) return;
+    try {
+      const bookmark = await insertBookmark(user.id, data);
+      setBookmarks((prev) => [bookmark, ...prev]);
+      // Update stats
+      const today = new Date().toISOString().split("T")[0];
+      const newStats = { ...stats };
+      newStats.xp += 15;
+      newStats.totalBookmarks += 1;
+      newStats.level = Math.floor(newStats.xp / 100) + 1;
+      const cats = new Set(newStats.categoriesCovered);
+      data.tags.forEach((t) => cats.add(t));
+      newStats.categoriesCovered = Array.from(cats);
+      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+      newStats.streak = newStats.lastActiveDate === yesterday.toISOString().split("T")[0] ? newStats.streak + 1 : (newStats.lastActiveDate === today ? newStats.streak : 1);
+      newStats.lastActiveDate = today;
+      newStats.dailyActivity = { ...newStats.dailyActivity, [today]: (newStats.dailyActivity[today] || 0) + 1 };
+      setStats(newStats);
+      await updateStats(user.id, newStats);
+      setShowAddBookmark(false);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
-  const handleDeleteBookmark = (id: string) => {
-    setBookmarks(deleteBookmark(id));
+  const handleDeleteBookmark = async (id: string) => {
+    try {
+      await deleteBookmarkDb(id);
+      setBookmarks((prev) => prev.filter((b) => b.id !== id));
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
-  const handleUpdateBookmark = (id: string, updates: Partial<Bookmark>) => {
-    setBookmarks(updateBookmarkStore(id, updates));
+  const handleUpdateBookmark = async (id: string, updates: Partial<Bookmark>) => {
+    try {
+      await updateBookmarkDb(id, updates);
+      setBookmarks((prev) => prev.map((b) => (b.id === id ? { ...b, ...updates } : b)));
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
-  const handleAddCollection = (name: string, emoji: string) => {
-    const collection: Collection = { id: generateId(), name, emoji, createdAt: new Date().toISOString() };
-    setCollections(addCollection(collection));
-    setShowAddCollection(false);
+  const handleAddCollection = async (name: string, emoji: string) => {
+    if (!user) return;
+    try {
+      const collection = await insertCollection(user.id, name, emoji);
+      setCollections((prev) => [...prev, collection]);
+      setShowAddCollection(false);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
-  const handleDeleteCollection = (id: string) => {
-    setCollections(deleteCollection(id));
-    if (activeCollection === id) setActiveCollection(null);
+  const handleDeleteCollection = async (id: string) => {
+    try {
+      await deleteCollectionDb(id);
+      setCollections((prev) => prev.filter((c) => c.id !== id));
+      if (activeCollection === id) setActiveCollection(null);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
   };
 
   return (
@@ -112,40 +157,20 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/profile")}
-              className="border-border text-muted-foreground hover:text-foreground font-mono gap-1.5"
-            >
-              <User className="h-4 w-4" />
-              Profile
+            <Button variant="outline" size="sm" onClick={() => navigate("/profile")} className="border-border text-muted-foreground hover:text-foreground font-mono gap-1.5">
+              <User className="h-4 w-4" /> Profile
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/snippets")}
-              className="border-border text-muted-foreground hover:text-foreground font-mono gap-1.5"
-            >
-              <Code2 className="h-4 w-4" />
-              Snippets
+            <Button variant="outline" size="sm" onClick={() => navigate("/snippets")} className="border-border text-muted-foreground hover:text-foreground font-mono gap-1.5">
+              <Code2 className="h-4 w-4" /> Snippets
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/recall")}
-              className="border-border text-muted-foreground hover:text-foreground font-mono gap-1.5"
-            >
-              <Zap className="h-4 w-4" />
-              Recall
+            <Button variant="outline" size="sm" onClick={() => navigate("/recall")} className="border-border text-muted-foreground hover:text-foreground font-mono gap-1.5">
+              <Zap className="h-4 w-4" /> Recall
             </Button>
-            <Button
-              onClick={() => setShowAddBookmark(true)}
-              className="bg-primary text-primary-foreground font-mono font-semibold gap-2 hover:shadow-[var(--neon-glow)] transition-shadow"
-              size="sm"
-            >
-              <Plus className="h-4 w-4" />
-              Add Bookmark
+            <Button onClick={() => setShowAddBookmark(true)} className="bg-primary text-primary-foreground font-mono font-semibold gap-2 hover:shadow-[var(--neon-glow)] transition-shadow" size="sm">
+              <Plus className="h-4 w-4" /> Add Bookmark
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleSignOut} className="text-muted-foreground hover:text-foreground" title="Sign out">
+              <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </header>
@@ -154,6 +179,7 @@ export default function Dashboard() {
           <div className="mb-6">
             <StatsBar stats={stats} />
           </div>
+
           {(activeCollection || activeTag) && (
             <div className="flex items-center gap-2 mb-4 font-mono text-sm">
               {activeCollection && (
@@ -181,27 +207,18 @@ export default function Dashboard() {
                 {bookmarks.length === 0 ? "Your vault is empty" : "No matches found"}
               </h3>
               <p className="text-muted-foreground text-sm max-w-sm">
-                {bookmarks.length === 0
-                  ? "Start building your second brain by adding your first bookmark."
-                  : "Try adjusting your search or filters."}
+                {bookmarks.length === 0 ? "Start building your second brain by adding your first bookmark." : "Try adjusting your search or filters."}
               </p>
               {bookmarks.length === 0 && (
                 <Button onClick={() => setShowAddBookmark(true)} className="mt-4 bg-primary text-primary-foreground font-mono gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add First Bookmark
+                  <Plus className="h-4 w-4" /> Add First Bookmark
                 </Button>
               )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {filtered.map((b) => (
-                <BookmarkCard
-                  key={b.id}
-                  bookmark={b}
-                  onDelete={handleDeleteBookmark}
-                  onTagClick={setActiveTag}
-                  onUpdate={handleUpdateBookmark}
-                />
+                <BookmarkCard key={b.id} bookmark={b} onDelete={handleDeleteBookmark} onTagClick={setActiveTag} onUpdate={handleUpdateBookmark} />
               ))}
             </div>
           )}
