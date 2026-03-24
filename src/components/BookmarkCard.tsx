@@ -25,9 +25,9 @@ export function BookmarkCard({ bookmark, onDelete, onTagClick, onUpdate }: Props
       });
       if (error) throw error;
       const summary: AISummary = data;
-      const updated = updateBookmark(bookmark.id, { aiSummary: summary });
+      await updateBookmarkDb(bookmark.id, { aiSummary: summary });
       onUpdate?.(bookmark.id, { aiSummary: summary });
-      trackSummaryGenerated();
+      toast.success("Summary generated!");
       toast.success("Summary generated!");
     } catch (err: any) {
       console.error(err);
