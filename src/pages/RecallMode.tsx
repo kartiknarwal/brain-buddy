@@ -4,6 +4,7 @@ import { Brain, ChevronLeft, ChevronRight, RotateCcw, ArrowLeft } from "lucide-r
 import { Button } from "@/components/ui/button";
 import { Bookmark } from "@/types/brain";
 import { getBookmarks } from "@/lib/store";
+import { trackRecallCompleted } from "@/lib/gamification";
 import { useNavigate } from "react-router-dom";
 
 export default function RecallMode() {
@@ -19,7 +20,11 @@ export default function RecallMode() {
 
   const next = useCallback(() => {
     setFlipped(false);
-    setCurrent((prev) => (prev + 1) % bookmarks.length);
+    setCurrent((prev) => {
+      const nextIdx = (prev + 1) % bookmarks.length;
+      if (nextIdx === 0 && prev !== 0) trackRecallCompleted();
+      return nextIdx;
+    });
   }, [bookmarks.length]);
 
   const prev = useCallback(() => {
