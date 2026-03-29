@@ -80,76 +80,81 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background grid-bg">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="text-muted-foreground hover:text-foreground gap-1 font-mono">
+    <div className="min-h-screen bg-background grid-bg relative overflow-hidden">
+      <div className="orb w-[500px] h-[500px] top-[-200px] right-[-100px] bg-primary/5" />
+      <div className="orb w-[400px] h-[400px] bottom-[-150px] left-[-100px] bg-accent/5" />
+
+      <header className="relative z-10 flex items-center justify-between px-6 py-4 border-b border-border/40 glass">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="text-muted-foreground hover:text-foreground gap-1.5 rounded-xl">
           <ArrowLeft className="h-4 w-4" /> Back
         </Button>
-        <div className="flex items-center gap-2">
-          <Brain className="h-5 w-5 text-primary" />
-          <span className="font-mono font-bold text-foreground">Profile</span>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+            <Brain className="h-4 w-4 text-primary" />
+          </div>
+          <span className="font-semibold text-foreground tracking-tight">Profile</span>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setEditingProfile(!editingProfile)} className="border-border text-muted-foreground hover:text-foreground font-mono gap-1.5">
+          <Button variant="ghost" size="sm" onClick={() => setEditingProfile(!editingProfile)} className="text-muted-foreground hover:text-foreground gap-1.5 rounded-xl">
             <Settings className="h-4 w-4" /> {editingProfile ? "Cancel" : "Edit"}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleShare} className="border-border text-muted-foreground hover:text-foreground font-mono gap-1.5">
+          <Button variant="ghost" size="sm" onClick={handleShare} className="text-muted-foreground hover:text-foreground gap-1.5 rounded-xl">
             {copied ? <Check className="h-4 w-4 text-primary" /> : <Share2 className="h-4 w-4" />}
             {copied ? "Copied!" : "Share"}
           </Button>
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+      <div className="max-w-4xl mx-auto px-6 py-8 space-y-7 relative z-10">
         {/* Profile edit section */}
         {editingProfile && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="glass neon-border rounded-xl p-6 space-y-4">
-            <h3 className="font-mono text-sm font-semibold text-foreground">Edit Profile</h3>
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="glass neon-border rounded-2xl p-7 space-y-5">
+            <h3 className="text-sm font-semibold text-foreground">Edit Profile</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider">Username</label>
-                <Input value={username} onChange={(e) => setUsername(e.target.value)} className="bg-secondary border-border font-mono text-sm mt-1" placeholder="your_username" />
+                <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Username</label>
+                <Input value={username} onChange={(e) => setUsername(e.target.value)} className="bg-secondary/50 border-border/50 text-sm mt-1.5 h-11 rounded-xl" placeholder="your_username" />
               </div>
               <div>
-                <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider">Display Name</label>
-                <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="bg-secondary border-border font-mono text-sm mt-1" placeholder="Your Name" />
+                <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Display Name</label>
+                <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="bg-secondary/50 border-border/50 text-sm mt-1.5 h-11 rounded-xl" placeholder="Your Name" />
               </div>
             </div>
             <div>
-              <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider">Bio</label>
-              <Input value={bio} onChange={(e) => setBio(e.target.value)} className="bg-secondary border-border font-mono text-sm mt-1" placeholder="A short bio about yourself..." />
+              <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Bio</label>
+              <Input value={bio} onChange={(e) => setBio(e.target.value)} className="bg-secondary/50 border-border/50 text-sm mt-1.5 h-11 rounded-xl" placeholder="A short bio about yourself..." />
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Globe className="h-4 w-4 text-muted-foreground" />
-                <span className="font-mono text-sm text-foreground">Public Profile</span>
-                <span className="text-xs text-muted-foreground">(anyone can view your collections & stats)</span>
+                <span className="text-sm text-foreground">Public Profile</span>
+                <span className="text-xs text-muted-foreground font-light">(anyone can view your collections & stats)</span>
               </div>
               <Switch checked={isPublic} onCheckedChange={setIsPublic} />
             </div>
             {isPublic && username && (
               <p className="text-xs text-primary font-mono">🔗 Public URL: {window.location.origin}/u/{username}</p>
             )}
-            <Button onClick={handleSaveProfile} className="bg-primary text-primary-foreground font-mono font-semibold">Save Changes</Button>
+            <Button onClick={handleSaveProfile} className="pill-btn bg-primary text-primary-foreground font-semibold">Save Changes</Button>
           </motion.div>
         )}
 
         {/* Hero card */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass neon-border rounded-2xl p-8 text-center relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass holo-shimmer neon-border rounded-3xl p-10 text-center relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
           <div className="relative">
-            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.2 }} className="w-20 h-20 rounded-2xl bg-primary/10 border-2 border-primary/30 flex items-center justify-center mx-auto mb-4">
+            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.2 }} className="w-20 h-20 rounded-2xl bg-primary/10 border-2 border-primary/25 flex items-center justify-center mx-auto mb-5 neo-raised animate-glow-pulse">
               <span className="text-3xl font-mono font-bold text-primary">L{stats.level}</span>
             </motion.div>
-            <h1 className="font-mono font-bold text-2xl text-foreground mb-1">{profile?.display_name || "Brain Vault User"}</h1>
+            <h1 className="font-bold text-2xl text-foreground mb-1 tracking-tight">{profile?.display_name || "Brain Vault User"}</h1>
             {profile?.username && <p className="text-xs text-muted-foreground font-mono mb-1">@{profile.username}</p>}
-            <p className="text-sm text-muted-foreground font-mono italic mb-6">{bio || quote}</p>
+            <p className="text-sm text-muted-foreground italic mb-7 font-light">{bio || quote}</p>
             <div className="max-w-sm mx-auto">
-              <div className="flex justify-between mb-1">
-                <span className="font-mono text-xs text-muted-foreground">Level {stats.level}</span>
-                <span className="font-mono text-xs text-primary">{progress.current} / {progress.needed} XP</span>
+              <div className="flex justify-between mb-1.5">
+                <span className="text-xs text-muted-foreground font-medium">Level {stats.level}</span>
+                <span className="text-xs text-primary font-mono">{progress.current} / {progress.needed} XP</span>
               </div>
-              <Progress value={progress.percent} className="h-2 bg-secondary" />
+              <Progress value={progress.percent} className="h-2 bg-secondary/60 rounded-full" />
             </div>
           </div>
         </motion.div>
@@ -157,15 +162,17 @@ export default function ProfilePage() {
         {/* Stats grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { icon: Star, label: "Total XP", value: stats.xp, color: "text-primary" },
-            { icon: Flame, label: "Day Streak", value: stats.streak, color: "text-orange-400" },
-            { icon: BookmarkIcon, label: "Bookmarks", value: bookmarkCount, color: "text-accent" },
-            { icon: Code2, label: "Snippets", value: snippetCount, color: "text-purple-400" },
+            { icon: Star, label: "Total XP", value: stats.xp, color: "text-primary", bg: "bg-primary/10 border-primary/15" },
+            { icon: Flame, label: "Day Streak", value: stats.streak, color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/15" },
+            { icon: BookmarkIcon, label: "Bookmarks", value: bookmarkCount, color: "text-accent", bg: "bg-accent/10 border-accent/15" },
+            { icon: Code2, label: "Snippets", value: snippetCount, color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/15" },
           ].map((s, i) => (
-            <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 * i }} className="glass rounded-xl p-5 text-center">
-              <s.icon className={`h-6 w-6 ${s.color} mx-auto mb-2`} />
-              <div className="font-mono font-bold text-2xl text-foreground">{s.value}</div>
-              <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider mt-1">{s.label}</div>
+            <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 * i }} className="glass rounded-2xl p-6 text-center">
+              <div className={`w-10 h-10 rounded-xl ${s.bg} border flex items-center justify-center mx-auto mb-3`}>
+                <s.icon className={`h-5 w-5 ${s.color}`} />
+              </div>
+              <div className="font-bold text-2xl text-foreground">{s.value}</div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1 font-medium">{s.label}</div>
             </motion.div>
           ))}
         </div>
@@ -173,10 +180,12 @@ export default function ProfilePage() {
         <ActivityHeatmap />
 
         {/* Badges */}
-        <div className="glass rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Trophy className="h-4 w-4 text-accent" />
-            <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-wider">Badges ({stats.badges.length}/{allBadges.length})</h3>
+        <div className="glass rounded-2xl p-6">
+          <div className="flex items-center gap-2.5 mb-5">
+            <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/15 flex items-center justify-center">
+              <Trophy className="h-4 w-4 text-accent" />
+            </div>
+            <h3 className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Badges ({stats.badges.length}/{allBadges.length})</h3>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {allBadges.map((badge) => {
@@ -184,12 +193,12 @@ export default function ProfilePage() {
               return (
                 <Tooltip key={badge.id}>
                   <TooltipTrigger asChild>
-                    <motion.div whileHover={{ scale: 1.05 }} className={`rounded-lg p-4 text-center transition-all ${unlocked ? "glass neon-border" : "bg-secondary/30 opacity-40 grayscale"}`}>
+                    <motion.div whileHover={{ scale: 1.05 }} className={`rounded-xl p-4 text-center transition-all ${unlocked ? "glass neon-border" : "bg-secondary/20 opacity-30 grayscale"}`}>
                       <span className="text-2xl block mb-2">{badge.icon}</span>
-                      <span className="font-mono text-xs text-foreground block">{badge.name}</span>
+                      <span className="text-xs text-foreground block font-medium">{badge.name}</span>
                     </motion.div>
                   </TooltipTrigger>
-                  <TooltipContent className="font-mono text-xs">{badge.description}{unlocked && " ✅"}</TooltipContent>
+                  <TooltipContent className="text-xs">{badge.description}{unlocked && " ✅"}</TooltipContent>
                 </Tooltip>
               );
             })}
@@ -198,14 +207,14 @@ export default function ProfilePage() {
 
         {/* Collections */}
         {collections.length > 0 && (
-          <div className="glass rounded-xl p-5">
-            <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-4">📂 Learning Paths</h3>
+          <div className="glass rounded-2xl p-6">
+            <h3 className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-5">📂 Learning Paths</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {collections.map((c) => (
-                <motion.div key={c.id} whileHover={{ scale: 1.02 }} className="glass-hover rounded-lg px-4 py-3 flex items-center justify-between cursor-pointer" onClick={() => navigate("/dashboard")}>
+                <motion.div key={c.id} whileHover={{ scale: 1.02 }} className="glass-hover rounded-xl px-5 py-3.5 flex items-center justify-between cursor-pointer" onClick={() => navigate("/dashboard")}>
                   <div className="flex items-center gap-3">
                     <span className="text-xl">{c.emoji}</span>
-                    <span className="font-mono text-sm text-foreground">{c.name}</span>
+                    <span className="text-sm text-foreground font-medium">{c.name}</span>
                   </div>
                 </motion.div>
               ))}
@@ -214,11 +223,11 @@ export default function ProfilePage() {
         )}
 
         {stats.categoriesCovered.length > 0 && (
-          <div className="glass rounded-xl p-5">
-            <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-4">🗺️ Categories Explored</h3>
+          <div className="glass rounded-2xl p-6">
+            <h3 className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-5">🗺️ Categories Explored</h3>
             <div className="flex flex-wrap gap-2">
               {stats.categoriesCovered.map((cat: string) => (
-                <span key={cat} className="px-3 py-1 rounded-full text-xs font-mono bg-primary/10 text-primary border border-primary/20">#{cat}</span>
+                <span key={cat} className="px-3.5 py-1.5 rounded-full text-xs font-medium bg-primary/8 text-primary border border-primary/15">#{cat}</span>
               ))}
             </div>
           </div>
