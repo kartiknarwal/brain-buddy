@@ -59,7 +59,6 @@ export default function Dashboard() {
     try {
       const bookmark = await insertBookmark(user.id, data);
       setBookmarks((prev) => [bookmark, ...prev]);
-      // Update stats
       const today = new Date().toISOString().split("T")[0];
       const newStats = { ...stats };
       newStats.xp += 15;
@@ -138,38 +137,40 @@ export default function Dashboard() {
       />
 
       <div className="flex-1 flex flex-col min-h-screen">
-        <header className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("/")}>
-            <Brain className="h-6 w-6 text-primary" />
-            <span className="font-mono font-bold text-foreground">BrainVault</span>
+        <header className="flex items-center justify-between px-6 py-4 border-b border-border/60 glass">
+          <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => navigate("/")}>
+            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <Brain className="h-4 w-4 text-primary" />
+            </div>
+            <span className="font-semibold text-foreground tracking-tight">BrainVault</span>
           </div>
 
           <div className="flex items-center gap-3 flex-1 max-w-md mx-6">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search bookmarks..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 bg-secondary border-border font-mono text-sm"
+                className="pl-10 bg-secondary/50 border-border/50 text-sm h-10 rounded-xl"
               />
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => navigate("/profile")} className="border-border text-muted-foreground hover:text-foreground font-mono gap-1.5">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/profile")} className="text-muted-foreground hover:text-foreground gap-1.5 rounded-xl h-9">
               <User className="h-4 w-4" /> Profile
             </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate("/snippets")} className="border-border text-muted-foreground hover:text-foreground font-mono gap-1.5">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/snippets")} className="text-muted-foreground hover:text-foreground gap-1.5 rounded-xl h-9">
               <Code2 className="h-4 w-4" /> Snippets
             </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate("/recall")} className="border-border text-muted-foreground hover:text-foreground font-mono gap-1.5">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/recall")} className="text-muted-foreground hover:text-foreground gap-1.5 rounded-xl h-9">
               <Zap className="h-4 w-4" /> Recall
             </Button>
-            <Button onClick={() => setShowAddBookmark(true)} className="bg-primary text-primary-foreground font-mono font-semibold gap-2 hover:shadow-[var(--neon-glow)] transition-shadow" size="sm">
+            <Button onClick={() => setShowAddBookmark(true)} className="pill-btn bg-primary text-primary-foreground font-semibold gap-2 h-9 text-xs" size="sm">
               <Plus className="h-4 w-4" /> Add Bookmark
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleSignOut} className="text-muted-foreground hover:text-foreground" title="Sign out">
+            <Button variant="ghost" size="icon" onClick={handleSignOut} className="text-muted-foreground hover:text-foreground rounded-xl" title="Sign out">
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
@@ -181,16 +182,16 @@ export default function Dashboard() {
           </div>
 
           {(activeCollection || activeTag) && (
-            <div className="flex items-center gap-2 mb-4 font-mono text-sm">
+            <div className="flex items-center gap-2 mb-4 text-sm">
               {activeCollection && (
-                <span className="px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+                <span className="px-3.5 py-1.5 rounded-full bg-primary/8 text-primary border border-primary/15 neo-raised text-xs font-medium">
                   {collections.find((c) => c.id === activeCollection)?.emoji}{" "}
                   {collections.find((c) => c.id === activeCollection)?.name}
                   <button onClick={() => setActiveCollection(null)} className="ml-2 text-muted-foreground hover:text-foreground">×</button>
                 </span>
               )}
               {activeTag && (
-                <span className="px-3 py-1 rounded-full bg-accent/10 text-accent border border-accent/20">
+                <span className="px-3.5 py-1.5 rounded-full bg-accent/8 text-accent border border-accent/15 neo-raised text-xs font-medium">
                   #{activeTag}
                   <button onClick={() => setActiveTag(null)} className="ml-2 text-muted-foreground hover:text-foreground">×</button>
                 </span>
@@ -200,23 +201,23 @@ export default function Dashboard() {
 
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                <Brain className="h-8 w-8 text-primary animate-pulse-neon" />
+              <div className="w-20 h-20 rounded-2xl bg-primary/8 border border-primary/15 flex items-center justify-center mb-5 neo-raised animate-glow-pulse">
+                <Brain className="h-9 w-9 text-primary" />
               </div>
-              <h3 className="font-mono font-semibold text-lg mb-2">
+              <h3 className="font-semibold text-lg mb-2 tracking-tight">
                 {bookmarks.length === 0 ? "Your vault is empty" : "No matches found"}
               </h3>
-              <p className="text-muted-foreground text-sm max-w-sm">
+              <p className="text-muted-foreground text-sm max-w-sm font-light">
                 {bookmarks.length === 0 ? "Start building your second brain by adding your first bookmark." : "Try adjusting your search or filters."}
               </p>
               {bookmarks.length === 0 && (
-                <Button onClick={() => setShowAddBookmark(true)} className="mt-4 bg-primary text-primary-foreground font-mono gap-2">
+                <Button onClick={() => setShowAddBookmark(true)} className="mt-5 pill-btn bg-primary text-primary-foreground font-semibold gap-2">
                   <Plus className="h-4 w-4" /> Add First Bookmark
                 </Button>
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {filtered.map((b) => (
                 <BookmarkCard key={b.id} bookmark={b} onDelete={handleDeleteBookmark} onTagClick={setActiveTag} onUpdate={handleUpdateBookmark} />
               ))}
